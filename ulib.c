@@ -123,12 +123,10 @@ int thread_create (void(*start_routine)(void*, void*),void *arg1, void* arg2){
 }
 
 int thread_join(){
-  //void* stack;
-  //int i = join(&stack);
-  //for(int i =) 0, i < 64, i++){
-  //  if(ptrs)
-  //}
-  return 1;
+  void* stack;
+  int i = join(&stack);
+  free(stack);
+  return i;
 }
 int FAA(int *ptr){
   int old = *ptr;
