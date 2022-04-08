@@ -117,7 +117,11 @@ memmove(void *vdst, const void *vsrc, int n)
 
 int thread_create (void(*start_routine)(void*, void*),void *arg1, void* arg2){
   //create new user stack
-  void* stack = malloc(PGSIZE * 2);
+  void *stack,*p = malloc(PGSIZE * 2);
+  if ((int)p % PGSIZE)
+    stack = p + (PGSIZE - (int)p % PGSIZE);
+  else
+    stack = p;
   int i = clone(start_routine, arg1, arg2, stack);
   return i;
 }
@@ -128,10 +132,19 @@ int thread_join(){
   free(stack);
   return i;
 }
-int FAA(int *ptr){
+/**int FAA(int *ptr){
   int old = *ptr;
-  *ptr = old + 1;
+  *ptr = old+1;
   return old;
+}*/
+static inline int FAA(int *var,int val){
+   __asm__ volatile
+    ("lock; xaddl %0, %1"
+	: "+r" (val),  "+m" (*var) // input + output
+	: // No input
+	: "memory"
+    );
+    return val;
 }
 
 void lock_init(lock_t *lock){
@@ -140,11 +153,10 @@ void lock_init(lock_t *lock){
 }
 
 void lock_acquire(lock_t *lock){
-  int myturn=FAA(&lock->ticket);
-  //wspin
+  int myturn=FAA(&lock->ticket,1);
   while(lock->turn != myturn);
 }
 
 void lock_release(lock_t *lock){
-  FAA(&lock -> turn);
+  lock->turn = lock->turn + 1;
 }
